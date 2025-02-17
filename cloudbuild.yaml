@@ -1,45 +1,47 @@
 # cloudbuild.yaml
 steps:
+# Authenticate to GKE
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'autopilot-cluster-1-test'  # Replace with your actual GKE cluster name
+  - '--region'
+  - '${_REGION}'
+  - '--project'
+  - '${PROJECT_ID}'
+
 # Initialize Terraform
 - name: 'hashicorp/terraform:1.0.0'
   args: ['init']
   dir: 'terraform'
-  id: 'terraform-init'
 
 # Plan Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args:
     - 'plan'
-    - '-var-file=main.tfvars'
+    - '-var-file=environments/dev.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
-  id: 'terraform-plan'
-  waitFor: ['terraform-init']
 
-# Manual approval step using sleep
+# Wait for approval
 - name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
   args:
-    - '-c'
-    - |
-      echo "Waiting for manual approval..."
-      echo "Check Cloud Build logs and click 'Resume' to continue or 'Cancel' to abort."
-      sleep infinity
-  id: 'approval'
-  waitFor: ['terraform-plan']
+    - 'alpha'
+    - 'builds'
+    - 'workflows'
+    - 'wait-approval'
+    - '--id=${BUILD_ID}'
+    - '--project=${PROJECT_ID}'
 
 # Apply Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args: ['apply', '-auto-approve', 'tfplan']
   dir: 'terraform'
-  id: 'terraform-apply'
-  waitFor: ['approval']
 
 substitutions:
-  _DEPLOYMENT_NAME: 'flask-app'
-  _CONTAINER_NAME: 'flask-app'
-  _NEW_IMAGE: 'asia-south1-docker.pkg.dev/vishakha-403211/test-tf/flask-app:latest'
+  _REGION: 'asia-south1'  # Your GKE cluster region
 
 options:
   substitution_option: 'ALLOW_LOOSE'
-  logging: CLOUD_LOGGING_ONLY
