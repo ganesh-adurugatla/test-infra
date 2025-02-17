@@ -4,6 +4,7 @@ steps:
 - name: 'hashicorp/terraform:1.0.0'
   args: ['init']
   dir: 'terraform'
+  id: 'terraform-init'
 
 # Plan Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
@@ -12,6 +13,8 @@ steps:
     - '-var-file=main.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
+  id: 'terraform-plan'
+  waitFor: ['terraform-init']
 
 # Manual approval step
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -20,13 +23,14 @@ steps:
     - 'submit'
     - '--config=approval.yaml'
     - '--substitutions=_BUILD_ID=${BUILD_ID}'
-  waitFor: ['terraform-plan']
   id: 'approval'
+  waitFor: ['terraform-plan']
 
 # Apply Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args: ['apply', '-auto-approve', 'tfplan']
   dir: 'terraform'
+  id: 'terraform-apply'
   waitFor: ['approval']
 
 substitutions:
