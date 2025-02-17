@@ -1,0 +1,11 @@
+# approval.yaml
+steps:
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+    - 'builds'
+    - 'wait'
+    - '--format=json'
+    - '${_BUILD_ID}'
+  id: 'wait-for-approval'
+
+timeout: 1800s  # 30 minutes timeout for approval
