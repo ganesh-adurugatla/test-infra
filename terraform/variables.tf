@@ -8,17 +8,7 @@ variable "region" {
   type        = string
 }
 
-variable "cluster_name" {
-  description = "GKE cluster name"
-  type        = string
-}
-
-variable "node_count" {
-  description = "Number of GKE nodes"
-  type        = number
-}
-
-variable "machine_type" {
-  description = "GKE node machine type"
+variable "app_image" {
+  description = "Flask application container image"
   type        = string
 }

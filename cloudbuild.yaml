@@ -1,19 +1,4 @@
 steps:
-- name: 'gcr.io/cloud-builders/gcloud'
-  args:
-    - 'auth'
-    - 'configure-docker'
-
-- name: 'gcr.io/cloud-builders/kubectl'
-  args:
-    - 'set'
-    - 'image'
-    - 'deployment/${_DEPLOYMENT_NAME}'
-    - '${_CONTAINER_NAME}=${_NEW_IMAGE}'
-  env:
-    - 'CLOUDSDK_COMPUTE_ZONE=${_COMPUTE_ZONE}'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
-
 - name: 'hashicorp/terraform:1.0.0'
   args: ['init']
   dir: 'terraform'
@@ -37,13 +22,3 @@ steps:
 - name: 'hashicorp/terraform:1.0.0'
   args: ['apply', '-auto-approve', 'tfplan']
   dir: 'terraform'
-
-substitutions:
-  _DEPLOYMENT_NAME: 'app'
-  _CONTAINER_NAME: 'app-container'
-  _NEW_IMAGE: 'gcr.io/${PROJECT_ID}/app:latest'
-  _COMPUTE_ZONE: 'us-central1-a'
-  _CLUSTER_NAME: 'my-gke-cluster'
-
-options:
-  substitution_option: 'ALLOW_LOOSE'

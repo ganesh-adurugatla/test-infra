@@ -3,56 +3,81 @@ provider "google" {
   region  = var.region
 }
 
-# VPC Network
-resource "google_compute_network" "vpc" {
-  name                    = "${var.cluster_name}-vpc"
-  auto_create_subnetworks = false
+provider "kubernetes" {
+  config_path = "~/.kube/config"  # Make sure you have cluster credentials
 }
 
-# Subnet
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.cluster_name}-subnet"
-  region        = var.region
-  network       = google_compute_network.vpc.id
-  ip_cidr_range = "10.0.0.0/24"
-}
-
-# GKE Cluster
-resource "google_container_cluster" "primary" {
-  name     = var.cluster_name
-  location = var.region
-
-  remove_default_node_pool = true
-  initial_node_count       = 1
-
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet.name
-
-  master_auth {
-    client_certificate_config {
-      issue_client_certificate = false
-    }
+resource "kubernetes_deployment" "flask_app" {
+  metadata {
+    name = "flask-app"
+    namespace = "default"
   }
-}
 
-# Node Pool
-resource "google_container_node_pool" "primary_nodes" {
-  name       = "${var.cluster_name}-node-pool"
-  location   = var.region
-  cluster    = google_container_cluster.primary.name
-  node_count = var.node_count
+  spec {
+    replicas = 2
 
-  node_config {
-    machine_type = var.machine_type
+    selector {
+      match_labels = {
+        app = "flask-app"
+      }
+    }
 
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/monitoring",
-      "https://www.googleapis.com/auth/devstorage.read_only"
-    ]
+    template {
+      metadata {
+        labels = {
+          app = "flask-app"
+        }
+      }
 
-    metadata = {
-      disable-legacy-endpoints = "true"
+      spec {
+        container {
+          name  = "flask-app"
+          image = var.app_image
+
+          port {
+            container_port = 8080
+            protocol      = "TCP"
+          }
+
+          resources {
+            limits = {
+              "ephemeral-storage" = "1Gi"
+            }
+            requests = {
+              cpu               = "500m"
+              memory           = "2Gi"
+              ephemeral-storage = "1Gi"
+            }
+          }
+
+          security_context {
+            capabilities {
+              drop = ["NET_RAW"]
+            }
+          }
+        }
+
+        security_context {
+          seccomp_profile {
+            type = "RuntimeDefault"
+          }
+        }
+
+        toleration {
+          key      = "kubernetes.io/arch"
+          operator = "Equal"
+          value    = "amd64"
+          effect   = "NoSchedule"
+        }
+      }
+    }
+
+    strategy {
+      type = "RollingUpdate"
+      rolling_update {
+        max_surge       = "25%"
+        max_unavailable = "25%"
+      }
     }
   }
 }
