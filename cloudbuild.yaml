@@ -1,21 +1,24 @@
 # cloudbuild.yaml
 steps:
-# Authenticate to GKE
+# Get GKE credentials
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
   - 'container'
   - 'clusters'
   - 'get-credentials'
-  - 'autopilot-cluster-1-test'  # Replace with your actual GKE cluster name
+  - 'autopilot-cluster-1-test'
   - '--region'
-  - '${_REGION}'
+  - 'asia-south1'
   - '--project'
-  - '${PROJECT_ID}'
+  - 'vishakha-403211'
+  id: 'get-credentials'
 
 # Initialize Terraform
 - name: 'hashicorp/terraform:1.0.0'
   args: ['init']
   dir: 'terraform'
+  id: 'terraform-init'
+  waitFor: ['get-credentials']
 
 # Plan Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
@@ -24,25 +27,27 @@ steps:
     - '-var-file=main.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
+  id: 'terraform-plan'
+  waitFor: ['terraform-init']
 
-# Wait for approval
+# Manual approval step
 - name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
   args:
-    - 'alpha'
-    - 'builds'
-    - 'workflows'
-    - 'wait-approval'
-    - '--id=${BUILD_ID}'
-    - '--project=${PROJECT_ID}'
+    - '-c'
+    - |
+      echo "Waiting for manual approval..."
+      echo "Check Cloud Build logs and click 'Resume' to continue or 'Cancel' to abort."
+      sleep infinity
+  id: 'approval'
+  waitFor: ['terraform-plan']
 
 # Apply Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args: ['apply', '-auto-approve', 'tfplan']
   dir: 'terraform'
-
-substitutions:
-  _REGION: 'asia-south1'  # Your GKE cluster region
-
+  id: 'terraform-apply'
+  waitFor: ['approval']
 
 options:
   substitution_option: 'ALLOW_LOOSE'
