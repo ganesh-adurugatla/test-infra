@@ -6,7 +6,7 @@ steps:
 - name: 'hashicorp/terraform:1.0.0'
   args:
     - 'plan'
-    - '-var-file=environments/main.tfvars'
+    - '-var-file=main.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
 
