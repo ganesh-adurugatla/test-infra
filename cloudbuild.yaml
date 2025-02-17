@@ -1,27 +1,39 @@
+# cloudbuild.yaml
 steps:
+# Initialize Terraform
 - name: 'hashicorp/terraform:1.0.0'
   args: ['init']
   dir: 'terraform'
 
+# Plan Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args:
     - 'plan'
-    - '-var-file=main.tfvars'
+    - '-var-file=environments/dev.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
 
+# Manual approval step
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
-    - 'alpha'
     - 'builds'
-    - 'workflows'
-    - 'wait-approval'
-    - '--id=${BUILD_ID}'
-    - '--project=${PROJECT_ID}'
+    - 'submit'
+    - '--config=approval.yaml'
+    - '--substitutions=_BUILD_ID=${BUILD_ID}'
+  waitFor: ['terraform-plan']
+  id: 'approval'
 
+# Apply Terraform changes
 - name: 'hashicorp/terraform:1.0.0'
   args: ['apply', '-auto-approve', 'tfplan']
   dir: 'terraform'
+  waitFor: ['approval']
+
+substitutions:
+  _DEPLOYMENT_NAME: 'flask-app'
+  _CONTAINER_NAME: 'flask-app'
+  _NEW_IMAGE: 'asia-south1-docker.pkg.dev/vishakha-403211/test-tf/flask-app:latest'
 
 options:
+  substitution_option: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
