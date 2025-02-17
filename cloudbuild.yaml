@@ -16,13 +16,15 @@ steps:
   id: 'terraform-plan'
   waitFor: ['terraform-init']
 
-# Manual approval step
+# Manual approval step using sleep
 - name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
   args:
-    - 'builds'
-    - 'submit'
-    - '--config=approval.yaml'
-    - '--substitutions=_BUILD_ID=${BUILD_ID}'
+    - '-c'
+    - |
+      echo "Waiting for manual approval..."
+      echo "Check Cloud Build logs and click 'Resume' to continue or 'Cancel' to abort."
+      sleep infinity
   id: 'approval'
   waitFor: ['terraform-plan']
 
