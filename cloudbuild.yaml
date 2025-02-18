@@ -16,15 +16,13 @@ steps:
 # Get cluster credentials
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
   id: 'get-credentials'
+  entrypoint: 'sh'
   args:
-  - 'container'
-  - 'clusters'
-  - 'get-credentials'
-  - 'autopilot-cluster-1-test'
-  - '--region'
-  - 'asia-south1'
-  - '--project'
-  - 'vishakha-403211'
+  - '-c'
+  - |
+    gcloud container clusters get-credentials autopilot-cluster-1-test \
+    --region asia-south1 \
+    --project vishakha-403211
 
 # Terraform Plan
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -62,6 +60,6 @@ substitutions:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8'  # Changed from N1 to E2
+  machineType: 'E2_HIGHCPU_8'
 
 timeout: '3600s'  # 1 hour timeout
