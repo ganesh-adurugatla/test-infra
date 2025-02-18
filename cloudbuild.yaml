@@ -8,10 +8,17 @@ steps:
   - '-c'
   - |
     apk add --update unzip curl
+    # Install Terraform
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
+    # Install kubectl and auth plugin
+    gcloud components install kubectl
     gcloud components install gke-gcloud-auth-plugin
+    # Verify installations
+    terraform version
+    kubectl version --client
+    ls -la /workspace
 
 # Get cluster credentials
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -20,9 +27,12 @@ steps:
   args:
   - '-c'
   - |
+    export USE_GKE_GCLOUD_AUTH_PLUGIN=True
     gcloud container clusters get-credentials autopilot-cluster-1-test \
     --region asia-south1 \
     --project vishakha-403211
+    # Verify kubectl access
+    kubectl get nodes
 
 # Terraform Plan
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -31,9 +41,18 @@ steps:
   args:
   - '-c'
   - |
-    cd terraform
+    # Install Terraform again (each step runs in a new container)
+    apk add --update unzip curl
+    curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
+    unzip terraform_1.4.7_linux_amd64.zip
+    mv terraform /usr/local/bin/
+    # Show current directory structure
+    pwd
+    ls -la
+    # Run Terraform commands
     terraform init
     terraform plan -var-file="main.tfvars" -out=tfplan
+  dir: 'terraform'
   waitFor: ['get-credentials']
 
 # Manual approval
@@ -50,16 +69,22 @@ steps:
   args:
   - '-c'
   - |
-    cd terraform
+    # Install Terraform again
+    apk add --update unzip curl
+    curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
+    unzip terraform_1.4.7_linux_amd64.zip
+    mv terraform /usr/local/bin/
+    # Run Terraform apply
     terraform init
     terraform apply -auto-approve tfplan
+  dir: 'terraform'
   waitFor: ['approval']
 
 substitutions:
-  _LOCK_ID: ''  # Provide lock ID when needed
+  _LOCK_ID: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'
 
-timeout: '3600s'  # 1 hour timeout
+timeout: '3600s'
