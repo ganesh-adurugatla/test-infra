@@ -1,24 +1,28 @@
 # cloudbuild.yaml
 steps:
-# Setup environment
+# Debug step to show directory structure
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+  id: 'debug'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    echo "Workspace contents:"
+    ls -la /workspace
+    echo "Terraform directory contents:"
+    ls -la /workspace/terraform
+
+# Setup Terraform
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
   id: 'setup'
   entrypoint: 'sh'
   args:
   - '-c'
   - |
-    # Update and install required packages
-    apk update
-    apk add --no-cache curl unzip
-    
-    # Install Terraform
+    apk add --update curl unzip
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
-    
-    # Show directory structure
-    echo "Current directory structure:"
-    ls -R
 
 # Get cluster credentials
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -44,18 +48,15 @@ steps:
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
     
-    # Show current directory and contents
-    pwd
-    ls -la
-    
-    # Change to terraform directory and show contents
-    cd terraform
+    # Navigate to terraform directory and show contents
+    cd /workspace/terraform
+    echo "Contents of terraform directory:"
     ls -la
     
     # Run Terraform commands
     terraform init
-    terraform plan -var-file="main.tfvars" -out=tfplan
-  waitFor: ['get-credentials']
+    terraform plan -var-file="/workspace/terraform/main.tfvars" -out=tfplan
+  workingDir: /workspace/terraform
 
 # Manual approval
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
@@ -77,10 +78,10 @@ steps:
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
     
-    cd terraform
+    cd /workspace/terraform
     terraform init
     terraform apply -auto-approve tfplan
-  waitFor: ['approval']
+  workingDir: /workspace/terraform
 
 options:
   logging: CLOUD_LOGGING_ONLY
