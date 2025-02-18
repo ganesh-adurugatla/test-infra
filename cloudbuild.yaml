@@ -57,21 +57,11 @@ steps:
     terraform apply -auto-approve tfplan
   waitFor: ['approval']
 
-# Optional Force Unlock step (commented out by default)
-# - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
-#   id: 'terraform-unlock'
-#   entrypoint: 'sh'
-#   args:
-#   - '-c'
-#   - |
-#     cd terraform
-#     terraform init
-#     terraform force-unlock -force $_LOCK_ID
-#   waitFor: ['terraform-plan']
-
 substitutions:
   _LOCK_ID: ''  # Provide lock ID when needed
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'N1_HIGHCPU_8'  # Similar to the 4x size in Bitbucket
+  machineType: 'E2_HIGHCPU_8'  # Changed from N1 to E2
+
+timeout: '3600s'  # 1 hour timeout
