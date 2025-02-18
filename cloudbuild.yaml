@@ -1,6 +1,6 @@
 # cloudbuild.yaml
 steps:
-# Get GKE credentials
+# Get cluster credentials
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
   - 'container'
@@ -30,16 +30,17 @@ steps:
   id: 'terraform-plan'
   waitFor: ['terraform-init']
 
-# Manual approval step
-- name: 'gcr.io/cloud-builders/gcloud'
+# Manual approval using Cloud Build pause
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  id: 'approval'
   entrypoint: 'bash'
   args:
     - '-c'
     - |
-      echo "Waiting for manual approval..."
-      echo "Check Cloud Build logs and click 'Resume' to continue or 'Cancel' to abort."
-      sleep infinity
-  id: 'approval'
+      echo "Terraform Plan completed. Please review the plan above."
+      echo "The build will pause for manual approval."
+      echo "Click 'Resume' to apply the changes or 'Cancel' to abort."
+      read -p "Type 'yes' to continue or anything else to abort: " response
   waitFor: ['terraform-plan']
 
 # Apply Terraform changes
@@ -50,5 +51,6 @@ steps:
   waitFor: ['approval']
 
 options:
-  substitution_option: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'  # 20 minute timeout
