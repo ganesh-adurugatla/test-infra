@@ -1,7 +1,21 @@
 # cloudbuild.yaml
 steps:
+# Setup and authentication
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+  id: 'setup'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    apk add --update unzip curl
+    curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
+    unzip terraform_1.4.7_linux_amd64.zip
+    mv terraform /usr/local/bin/
+    gcloud components install gke-gcloud-auth-plugin
+
 # Get cluster credentials
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+  id: 'get-credentials'
   args:
   - 'container'
   - 'clusters'
@@ -11,46 +25,53 @@ steps:
   - 'asia-south1'
   - '--project'
   - 'vishakha-403211'
-  id: 'get-credentials'
 
-# Initialize Terraform
-- name: 'hashicorp/terraform:1.0.0'
-  args: ['init']
-  dir: 'terraform'
-  id: 'terraform-init'
+# Terraform Plan
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+  id: 'terraform-plan'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    cd terraform
+    terraform init
+    terraform plan -var-file="main.tfvars" -out=tfplan
   waitFor: ['get-credentials']
 
-# Plan Terraform changes
-- name: 'hashicorp/terraform:1.0.0'
-  args:
-    - 'plan'
-    - '-var-file=main.tfvars'
-    - '-out=tfplan'
-  dir: 'terraform'
-  id: 'terraform-plan'
-  waitFor: ['terraform-init']
-
-# Approval step
-- name: 'gcr.io/cloud-builders/gcloud'
+# Manual approval
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'approval'
-  entrypoint: '/bin/sh'
-  args:
-    - '-c'
-    - |
-      echo "Terraform Plan completed. Please review the plan above."
-      echo "Build will pause for 10 minutes for manual approval."
-      echo "Click 'Cancel' to abort the build if the plan is not acceptable."
-      sleep 600
+  entrypoint: 'sleep'
+  args: ['infinity']
   waitFor: ['terraform-plan']
 
-# Apply Terraform changes
-- name: 'hashicorp/terraform:1.0.0'
-  args: ['apply', '-auto-approve', 'tfplan']
-  dir: 'terraform'
+# Terraform Apply
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
   id: 'terraform-apply'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    cd terraform
+    terraform init
+    terraform apply -auto-approve tfplan
   waitFor: ['approval']
+
+# Optional Force Unlock step (commented out by default)
+# - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
+#   id: 'terraform-unlock'
+#   entrypoint: 'sh'
+#   args:
+#   - '-c'
+#   - |
+#     cd terraform
+#     terraform init
+#     terraform force-unlock -force $_LOCK_ID
+#   waitFor: ['terraform-plan']
+
+substitutions:
+  _LOCK_ID: ''  # Provide lock ID when needed
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-timeout: '1200s'  # 20 minute timeout
+  machineType: 'N1_HIGHCPU_8'  # Similar to the 4x size in Bitbucket
