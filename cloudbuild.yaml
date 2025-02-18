@@ -1,24 +1,36 @@
 # cloudbuild.yaml
 steps:
-# Setup and authentication
+# Setup environment
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
   id: 'setup'
   entrypoint: 'sh'
   args:
   - '-c'
   - |
-    apk add --update unzip curl
+    # Update and install required packages
+    apk update
+    apk add --no-cache curl unzip python3 py3-pip
+
+    # Install Google Cloud components
+    pip3 install google-cloud-sdk google-auth-oauthlib
+
+    # Install kubectl
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    mv kubectl /usr/local/bin/
+
+    # Install gke-gcloud-auth-plugin
+    gcloud components install gke-gcloud-auth-plugin --quiet
+
     # Install Terraform
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
-    # Install kubectl and auth plugin
-    gcloud components install kubectl
-    gcloud components install gke-gcloud-auth-plugin
+    
     # Verify installations
     terraform version
     kubectl version --client
-    ls -la /workspace
+    echo "Setup completed"
 
 # Get cluster credentials
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -27,12 +39,22 @@ steps:
   args:
   - '-c'
   - |
+    # Install kubectl again (new container)
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    mv kubectl /usr/local/bin/
+    
+    # Set auth plugin environment variable
     export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+    
+    # Get cluster credentials
     gcloud container clusters get-credentials autopilot-cluster-1-test \
     --region asia-south1 \
     --project vishakha-403211
-    # Verify kubectl access
-    kubectl get nodes
+    
+    # Verify cluster access
+    kubectl version --client
+    echo "Credentials configured"
 
 # Terraform Plan
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -41,14 +63,12 @@ steps:
   args:
   - '-c'
   - |
-    # Install Terraform again (each step runs in a new container)
-    apk add --update unzip curl
+    # Install Terraform (new container)
+    apk add --update curl unzip
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
-    # Show current directory structure
-    pwd
-    ls -la
+    
     # Run Terraform commands
     terraform init
     terraform plan -var-file="main.tfvars" -out=tfplan
@@ -69,19 +89,17 @@ steps:
   args:
   - '-c'
   - |
-    # Install Terraform again
-    apk add --update unzip curl
+    # Install Terraform (new container)
+    apk add --update curl unzip
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
+    
     # Run Terraform apply
     terraform init
     terraform apply -auto-approve tfplan
   dir: 'terraform'
   waitFor: ['approval']
-
-substitutions:
-  _LOCK_ID: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY
