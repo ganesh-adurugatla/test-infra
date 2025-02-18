@@ -9,28 +9,16 @@ steps:
   - |
     # Update and install required packages
     apk update
-    apk add --no-cache curl unzip python3 py3-pip
-
-    # Install Google Cloud components
-    pip3 install google-cloud-sdk google-auth-oauthlib
-
-    # Install kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    mv kubectl /usr/local/bin/
-
-    # Install gke-gcloud-auth-plugin
-    gcloud components install gke-gcloud-auth-plugin --quiet
-
+    apk add --no-cache curl unzip
+    
     # Install Terraform
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
     
-    # Verify installations
-    terraform version
-    kubectl version --client
-    echo "Setup completed"
+    # Show directory structure
+    echo "Current directory structure:"
+    ls -R
 
 # Get cluster credentials
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -39,22 +27,9 @@ steps:
   args:
   - '-c'
   - |
-    # Install kubectl again (new container)
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    mv kubectl /usr/local/bin/
-    
-    # Set auth plugin environment variable
-    export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-    
-    # Get cluster credentials
     gcloud container clusters get-credentials autopilot-cluster-1-test \
     --region asia-south1 \
     --project vishakha-403211
-    
-    # Verify cluster access
-    kubectl version --client
-    echo "Credentials configured"
 
 # Terraform Plan
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
@@ -63,16 +38,23 @@ steps:
   args:
   - '-c'
   - |
-    # Install Terraform (new container)
+    # Install Terraform
     apk add --update curl unzip
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
     
+    # Show current directory and contents
+    pwd
+    ls -la
+    
+    # Change to terraform directory and show contents
+    cd terraform
+    ls -la
+    
     # Run Terraform commands
     terraform init
     terraform plan -var-file="main.tfvars" -out=tfplan
-  dir: 'terraform'
   waitFor: ['get-credentials']
 
 # Manual approval
@@ -89,16 +71,15 @@ steps:
   args:
   - '-c'
   - |
-    # Install Terraform (new container)
+    # Install Terraform
     apk add --update curl unzip
     curl -LO https://releases.hashicorp.com/terraform/1.4.7/terraform_1.4.7_linux_amd64.zip
     unzip terraform_1.4.7_linux_amd64.zip
     mv terraform /usr/local/bin/
     
-    # Run Terraform apply
+    cd terraform
     terraform init
     terraform apply -auto-approve tfplan
-  dir: 'terraform'
   waitFor: ['approval']
 
 options:
