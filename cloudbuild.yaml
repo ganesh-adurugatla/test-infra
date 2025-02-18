@@ -30,17 +30,17 @@ steps:
   id: 'terraform-plan'
   waitFor: ['terraform-init']
 
-# Manual approval using Cloud Build pause
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+# Approval step
+- name: 'gcr.io/cloud-builders/gcloud'
   id: 'approval'
-  entrypoint: 'bash'
+  entrypoint: '/bin/sh'
   args:
     - '-c'
     - |
       echo "Terraform Plan completed. Please review the plan above."
-      echo "The build will pause for manual approval."
-      echo "Click 'Resume' to apply the changes or 'Cancel' to abort."
-      read -p "Type 'yes' to continue or anything else to abort: " response
+      echo "Build will pause for 10 minutes for manual approval."
+      echo "Click 'Cancel' to abort the build if the plan is not acceptable."
+      sleep 600
   waitFor: ['terraform-plan']
 
 # Apply Terraform changes
