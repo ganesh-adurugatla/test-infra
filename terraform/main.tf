@@ -4,24 +4,13 @@ provider "google" {
   region  = var.region
 }
 
-data "google_client_config" "current" {}
-
-data "google_container_cluster" "my_cluster" {
-  name     = "autopilot-cluster-1-test"
-  location = var.region
-}
-
 provider "kubernetes" {
-  host  = "https://${data.google_container_cluster.my_cluster.endpoint}"
-  token = data.google_client_config.current.access_token
-  cluster_ca_certificate = base64decode(
-    data.google_container_cluster.my_cluster.master_auth[0].cluster_ca_certificate
-  )
+  config_path = "~/.kube/config"  # Will be replaced by Cloud Build's authentication
 }
 
 resource "kubernetes_deployment" "flask_app" {
   metadata {
-    name = "flask-app"
+    name      = "flask-app"
     namespace = "default"
   }
 
@@ -74,6 +63,21 @@ resource "kubernetes_deployment" "flask_app" {
             type = "RuntimeDefault"
           }
         }
+
+        toleration {
+          effect   = "NoSchedule"
+          key      = "kubernetes.io/arch"
+          operator = "Equal"
+          value    = "amd64"
+        }
+      }
+    }
+
+    strategy {
+      type = "RollingUpdate"
+      rolling_update {
+        max_surge       = "25%"
+        max_unavailable = "25%"
       }
     }
   }
