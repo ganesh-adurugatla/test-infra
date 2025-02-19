@@ -5,7 +5,8 @@ provider "google" {
 }
 
 provider "kubernetes" {
-  config_path = "~/.kube/config"  # Will be replaced by Cloud Build's authentication
+  config_path    = "/workspace/kubeconfig"
+  config_context = "gke_vishakha-403211_asia-south1_autopilot-cluster-1-test"
 }
 
 resource "kubernetes_deployment" "flask_app" {
