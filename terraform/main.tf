@@ -70,9 +70,7 @@ resource "kubernetes_deployment" "flask_app" {
       spec[0].template[0].spec[0].container[0].resources,
       spec[0].template[0].spec[0].toleration,
       spec[0].template[0].spec[0].security_context,
-      metadata[0].annotations,
-      metadata[0].generation,
-      metadata[0].resource_version,
+      metadata[0].annotations
     ]
   }
 }
