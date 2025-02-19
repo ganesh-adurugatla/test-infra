@@ -18,11 +18,27 @@ steps:
   id: 'tf-init'
   args: ['init']
   dir: 'terraform'
+  waitFor: ['get-credentials']
 
 # Get plan file from GCS
 - name: 'gcr.io/cloud-builders/gsutil'
-  args: ['cp', 'gs://${_BUCKET_NAME}/tfplan', 'terraform/tfplan']
+  id: 'get-plan'
+  args: 
+  - 'cp'
+  - 'gs://${_BUCKET_NAME}/tfplan'
+  - '/workspace/terraform/tfplan'
   waitFor: ['tf-init']
+
+# List directory to verify plan file
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'verify-plan'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    echo "Verifying plan file exists:"
+    ls -la /workspace/terraform/
+  waitFor: ['get-plan']
 
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
@@ -31,9 +47,9 @@ steps:
     - 'apply'
     - '-input=false'
     - '-auto-approve'
-    - 'tfplan'
+    - '/workspace/terraform/tfplan'
   dir: 'terraform'
-  waitFor: ['tf-init']
+  waitFor: ['verify-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
