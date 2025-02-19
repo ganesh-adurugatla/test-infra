@@ -12,20 +12,34 @@ steps:
     echo "Terraform directory contents:"
     ls -la /workspace/terraform
 
+# Get cluster credentials
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'get-credentials'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'autopilot-cluster-1-test'
+  - '--region'
+  - 'asia-south1'
+  - '--project'
+  - 'vishakha-403211'
+
 # Terraform Init
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-init'
   args: ['init']
   dir: 'terraform'
 
-# Terraform State Remove (to handle existing resource)
+# Import existing deployment into Terraform state
 - name: 'hashicorp/terraform:1.4.7'
-  id: 'tf-state-remove'
+  id: 'tf-import'
   entrypoint: 'sh'
   args:
   - '-c'
   - |
     terraform state rm kubernetes_deployment.flask_app || true
+    terraform import kubernetes_deployment.flask_app default/flask-app
   dir: 'terraform'
 
 # Terraform Plan
@@ -37,6 +51,7 @@ steps:
     - '-out=tfplan'
     - '-input=false'
   dir: 'terraform'
+  waitFor: ['tf-import']
 
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
@@ -47,6 +62,7 @@ steps:
     - '-auto-approve'
     - 'tfplan'
   dir: 'terraform'
+  waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
