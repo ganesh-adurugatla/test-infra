@@ -1,0 +1,49 @@
+# cloudbuild-apply.yaml
+steps:
+# Get cluster credentials
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'get-credentials'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'autopilot-cluster-1-test'
+  - '--region'
+  - 'asia-south1'
+  - '--project'
+  - 'vishakha-403211'
+
+# Terraform Init
+- name: 'hashicorp/terraform:1.4.7'
+  id: 'tf-init'
+  args: ['init']
+  dir: 'terraform'
+
+# Get plan file from GCS
+- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['cp', 'gs://${_BUCKET_NAME}/tfplan', 'terraform/tfplan']
+  waitFor: ['tf-init']
+
+# Terraform Apply
+- name: 'hashicorp/terraform:1.4.7'
+  id: 'tf-apply'
+  args:
+    - 'apply'
+    - '-input=false'
+    - '-auto-approve'
+    - 'tfplan'
+  dir: 'terraform'
+  waitFor: ['tf-init']
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - 'TF_VAR_project_id=vishakha-403211'
+    - 'TF_VAR_region=asia-south1'
+    - 'TF_IN_AUTOMATION=true'
+    - 'TF_INPUT=0'
+
+substitutions:
+  _BUCKET_NAME: 'vishakha-403211-tfstate'  # Use your state bucket
+
+timeout: '1800s'
