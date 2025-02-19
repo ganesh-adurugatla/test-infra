@@ -49,15 +49,27 @@ steps:
   args:
     - 'plan'
     - '-var-file=main.tfvars'
-    - '-out=tfplan'
+    - '-out=/workspace/terraform/tfplan'
     - '-input=false'
   dir: 'terraform'
   waitFor: ['tf-import']
 
+# Verify plan file exists
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'verify-plan'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    echo "Verifying plan file exists:"
+    ls -la /workspace/terraform/
+  waitFor: ['tf-plan']
+
 # Save plan file to GCS
 - name: 'gcr.io/cloud-builders/gsutil'
-  args: ['cp', 'terraform/tfplan', 'gs://${_BUCKET_NAME}/tfplan']
-  waitFor: ['tf-plan']
+  id: 'save-plan'
+  args: ['cp', '/workspace/terraform/tfplan', 'gs://${_BUCKET_NAME}/tfplan']
+  waitFor: ['verify-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
