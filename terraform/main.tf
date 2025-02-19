@@ -1,3 +1,4 @@
+# main.tf
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -58,35 +59,20 @@ resource "kubernetes_deployment" "flask_app" {
               ephemeral-storage = "1Gi"
             }
           }
-
-          security_context {
-            capabilities {
-              drop = ["NET_RAW"]
-            }
-          }
-        }
-
-        security_context {
-          seccomp_profile {
-            type = "RuntimeDefault"
-          }
-        }
-
-        toleration {
-          effect   = "NoSchedule"
-          key      = "kubernetes.io/arch"
-          operator = "Equal"
-          value    = "amd64"
         }
       }
     }
+  }
 
-    strategy {
-      type = "RollingUpdate"
-      rolling_update {
-        max_surge       = "25%"
-        max_unavailable = "25%"
-      }
-    }
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to these fields as they are managed by GKE Autopilot
+      spec[0].template[0].spec[0].container[0].resources,
+      spec[0].template[0].spec[0].toleration,
+      spec[0].template[0].spec[0].security_context,
+      metadata[0].annotations,
+      metadata[0].generation,
+      metadata[0].resource_version,
+    ]
   }
 }
