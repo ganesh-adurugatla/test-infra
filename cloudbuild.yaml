@@ -18,15 +18,14 @@ steps:
   args: ['init']
   dir: 'terraform'
 
-# Import existing deployment
+# Terraform State Remove (to handle existing resource)
 - name: 'hashicorp/terraform:1.4.7'
-  id: 'tf-import'
+  id: 'tf-state-remove'
   entrypoint: 'sh'
   args:
   - '-c'
   - |
-    terraform init
-    terraform import kubernetes_deployment.flask_app default/flask-app || true
+    terraform state rm kubernetes_deployment.flask_app || true
   dir: 'terraform'
 
 # Terraform Plan
@@ -36,23 +35,25 @@ steps:
     - 'plan'
     - '-var-file=main.tfvars'
     - '-out=tfplan'
+    - '-input=false'
   dir: 'terraform'
-  waitFor: ['tf-import']
 
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-apply'
   args:
     - 'apply'
+    - '-input=false'
     - '-auto-approve'
     - 'tfplan'
   dir: 'terraform'
-  waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
   env:
     - 'TF_VAR_project_id=vishakha-403211'
     - 'TF_VAR_region=asia-south1'
+    - 'TF_IN_AUTOMATION=true'
+    - 'TF_INPUT=0'
 
 timeout: '1800s'
