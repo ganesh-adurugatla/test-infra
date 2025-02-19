@@ -1,4 +1,4 @@
-# cloudbuild.yaml
+# cloudbuild-plan.yaml
 steps:
 # Debug step
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -39,7 +39,6 @@ steps:
   - '-c'
   - |
     terraform init
-    # Use the variable from tfvars file during import
     export TF_VAR_app_image=$(grep 'app_image' main.tfvars | cut -d'=' -f2- | tr -d ' "')
     terraform import kubernetes_deployment.flask_app default/flask-app || true
   dir: 'terraform'
@@ -55,23 +54,10 @@ steps:
   dir: 'terraform'
   waitFor: ['tf-import']
 
-# Manual approval
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-  id: 'approval'
-  entrypoint: 'sleep'
-  args: ['infinity']
+# Save plan file to GCS
+- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['cp', 'terraform/tfplan', 'gs://${_BUCKET_NAME}/tfplan']
   waitFor: ['tf-plan']
-
-# Terraform Apply
-- name: 'hashicorp/terraform:1.4.7'
-  id: 'tf-apply'
-  args:
-    - 'apply'
-    - '-input=false'
-    - '-auto-approve'
-    - 'tfplan'
-  dir: 'terraform'
-  waitFor: ['approval']
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -80,5 +66,8 @@ options:
     - 'TF_VAR_region=asia-south1'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
+
+substitutions:
+  _BUCKET_NAME: 'vishakha-403211-tfstate'  # Use your state bucket
 
 timeout: '1800s'
