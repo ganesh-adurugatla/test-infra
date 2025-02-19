@@ -9,6 +9,6 @@ variable "region" {
 }
 
 variable "app_image" {
-  description = "Flask application container image"
+  description = "Container image for the Flask application"
   type        = string
 }
