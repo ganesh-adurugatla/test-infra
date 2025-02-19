@@ -18,6 +18,17 @@ steps:
   args: ['init']
   dir: 'terraform'
 
+# Import existing deployment
+- name: 'hashicorp/terraform:1.4.7'
+  id: 'tf-import'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    terraform init
+    terraform import kubernetes_deployment.flask_app default/flask-app || true
+  dir: 'terraform'
+
 # Terraform Plan
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-plan'
@@ -26,7 +37,7 @@ steps:
     - '-var-file=main.tfvars'
     - '-out=tfplan'
   dir: 'terraform'
-  waitFor: ['tf-init']
+  waitFor: ['tf-import']
 
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
