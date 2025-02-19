@@ -55,6 +55,13 @@ steps:
   dir: 'terraform'
   waitFor: ['tf-import']
 
+# Manual approval
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  id: 'approval'
+  entrypoint: 'sleep'
+  args: ['infinity']
+  waitFor: ['tf-plan']
+
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-apply'
@@ -64,7 +71,7 @@ steps:
     - '-auto-approve'
     - 'tfplan'
   dir: 'terraform'
-  waitFor: ['tf-plan']
+  waitFor: ['approval']
 
 options:
   logging: CLOUD_LOGGING_ONLY
