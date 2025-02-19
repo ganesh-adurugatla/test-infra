@@ -40,17 +40,6 @@ steps:
   dir: 'terraform'
   waitFor: ['tf-init']
 
-# Manual approval
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'approve'
-  entrypoint: 'sh'
-  args:
-  - '-c'
-  - |
-    echo "Terraform plan completed. Please review the plan above."
-    echo "Click 'Resume' to apply the changes or 'Cancel' to abort."
-    sleep infinity
-
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-apply'
@@ -59,7 +48,7 @@ steps:
     - '-auto-approve'
     - 'tfplan'
   dir: 'terraform'
-  waitFor: ['approve']
+  waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
