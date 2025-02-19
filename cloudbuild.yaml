@@ -38,8 +38,10 @@ steps:
   args:
   - '-c'
   - |
-    terraform state rm kubernetes_deployment.flask_app || true
-    terraform import kubernetes_deployment.flask_app default/flask-app
+    terraform init
+    # Use the variable from tfvars file during import
+    export TF_VAR_app_image=$(grep 'app_image' main.tfvars | cut -d'=' -f2- | tr -d ' "')
+    terraform import kubernetes_deployment.flask_app default/flask-app || true
   dir: 'terraform'
 
 # Terraform Plan
