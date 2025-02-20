@@ -71,6 +71,19 @@ steps:
   args: ['cp', '/workspace/terraform/tfplan', 'gs://${_BUCKET_NAME}/tfplan']
   waitFor: ['verify-plan']
 
+# Trigger apply build
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'trigger-apply'
+  args:
+    - 'builds'
+    - 'triggers'
+    - 'run'
+    - '5c2e6392-3307-4603-9107-95150b4a6092'  # Your apply trigger ID
+    - '--branch=${BRANCH_NAME}'
+    - '--project=vishakha-403211'
+    - '--region=asia-south1'  # Added region since your trigger is in asia-south1
+  waitFor: ['save-plan']
+
 options:
   logging: CLOUD_LOGGING_ONLY
   env:
@@ -80,6 +93,6 @@ options:
     - 'TF_INPUT=0'
 
 substitutions:
-  _BUCKET_NAME: 'vishakha-403211-tfstate'  # Use your state bucket
+  _BUCKET_NAME: 'vishakha-403211-tfstate'
 
 timeout: '1800s'
