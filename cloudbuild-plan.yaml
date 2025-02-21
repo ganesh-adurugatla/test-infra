@@ -1,17 +1,5 @@
 # cloudbuild-plan.yaml
 steps:
-# Debug step
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'debug'
-  entrypoint: 'sh'
-  args:
-  - '-c'
-  - |
-    echo "Workspace contents:"
-    ls -la /workspace
-    echo "Terraform directory contents:"
-    ls -la /workspace/terraform
-
 # Get cluster credentials
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'get-credentials'
@@ -54,23 +42,6 @@ steps:
   dir: 'terraform'
   waitFor: ['tf-import']
 
-# Verify plan file exists
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'verify-plan'
-  entrypoint: 'sh'
-  args:
-  - '-c'
-  - |
-    echo "Verifying plan file exists:"
-    ls -la /workspace/terraform/
-  waitFor: ['tf-plan']
-
-# Save plan file to GCS
-- name: 'gcr.io/cloud-builders/gsutil'
-  id: 'save-plan'
-  args: ['cp', '/workspace/terraform/tfplan', 'gs://${_BUCKET_NAME}/tfplan']
-  waitFor: ['verify-plan']
-
 # Trigger apply build
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'trigger-apply'
@@ -82,7 +53,7 @@ steps:
     - '--branch=${BRANCH_NAME}'
     - '--project=vishakha-403211'
     - '--region=asia-south1'  # Added region since your trigger is in asia-south1
-  waitFor: ['save-plan']
+  waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
