@@ -52,8 +52,8 @@ steps:
     - '5c2e6392-3307-4603-9107-95150b4a6092'  # Your apply trigger ID
     - '--branch=${BRANCH_NAME}'
     - '--project=vishakha-403211'
-    - '--region=asia-south1'  # Added region since your trigger is in asia-south1
-  waitFor: ['tf-plan']
+    - '--region=asia-south1'
+  waitFor: ['save-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
