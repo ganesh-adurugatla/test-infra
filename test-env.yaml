@@ -1,0 +1,8 @@
+substitutions:
+  _TERRAFORM_VERSION: 'hashicorp/terraform:1.4.7'
+  _CLUSTER_NAME: 'autopilot-cluster-1-test'
+  _REGION: 'asia-south1'
+  _K8S_NAMESPACE: 'default'
+  _TFVARS_FILE: 'main.tfvars'
+  _APPLY_TRIGGER_ID: '5c2e6392-3307-4603-9107-95150b4a6092'
+  _BUCKET_NAME: '${PROJECT_ID}-tfstate'
