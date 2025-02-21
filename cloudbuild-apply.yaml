@@ -7,39 +7,36 @@ steps:
   - 'container'
   - 'clusters'
   - 'get-credentials'
-  - 'autopilot-cluster-1-test'
+  - '${_CLUSTER_NAME}'
   - '--region'
-  - 'asia-south1'
+  - '${_REGION}'
   - '--project'
-  - 'vishakha-403211'
+  - '${PROJECT_ID}'
 
 # Terraform Init
-- name: 'hashicorp/terraform:1.4.7'
+- name: '${_TERRAFORM_VERSION}'
   id: 'tf-init'
   args: ['init']
   dir: 'terraform'
   waitFor: ['get-credentials']
 
 # Terraform Apply
-- name: 'hashicorp/terraform:1.4.7'
+- name: '${_TERRAFORM_VERSION}'
   id: 'tf-apply'
   args:
     - 'apply'
     - '-input=false'
     - '-auto-approve'
-    - '-var-file=main.tfvars'
+    - '-var-file=${_TFVARS_FILE}'
   dir: 'terraform'
   waitFor: ['tf-init']
 
 options:
   logging: CLOUD_LOGGING_ONLY
   env:
-    - 'TF_VAR_project_id=vishakha-403211'
-    - 'TF_VAR_region=asia-south1'
+    - 'TF_VAR_project_id=${PROJECT_ID}'
+    - 'TF_VAR_region=${_REGION}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
-
-substitutions:
-  _BUCKET_NAME: 'vishakha-403211-tfstate'  
 
 timeout: '1800s'
