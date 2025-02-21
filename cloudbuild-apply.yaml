@@ -20,26 +20,6 @@ steps:
   dir: 'terraform'
   waitFor: ['get-credentials']
 
-# Get plan file from GCS
-- name: 'gcr.io/cloud-builders/gsutil'
-  id: 'get-plan'
-  args: 
-  - 'cp'
-  - 'gs://${_BUCKET_NAME}/tfplan'
-  - '/workspace/terraform/tfplan'
-  waitFor: ['tf-init']
-
-# List directory to verify plan file
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: 'verify-plan'
-  entrypoint: 'sh'
-  args:
-  - '-c'
-  - |
-    echo "Verifying plan file exists:"
-    ls -la /workspace/terraform/
-  waitFor: ['get-plan']
-
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-apply'
@@ -47,9 +27,9 @@ steps:
     - 'apply'
     - '-input=false'
     - '-auto-approve'
-    - '/workspace/terraform/tfplan'
+    - '-var-file=main.tfvars
   dir: 'terraform'
-  waitFor: ['verify-plan']
+  waitFor: ['tf-init']
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -60,6 +40,6 @@ options:
     - 'TF_INPUT=0'
 
 substitutions:
-  _BUCKET_NAME: 'vishakha-403211-tfstate'  # Use your state bucket
+  _BUCKET_NAME: 'vishakha-403211-tfstate'  
 
 timeout: '1800s'
