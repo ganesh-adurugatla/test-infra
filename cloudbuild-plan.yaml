@@ -7,36 +7,36 @@ steps:
   - 'container'
   - 'clusters'
   - 'get-credentials'
-  - 'autopilot-cluster-1-test'
+  - '${_CLUSTER_NAME}'
   - '--region'
-  - 'asia-south1'
+  - '${_REGION}'
   - '--project'
-  - 'vishakha-403211'
+  - '${PROJECT_ID}'
 
 # Terraform Init
-- name: 'hashicorp/terraform:1.4.7'
+- name: '${_TERRAFORM_VERSION}'
   id: 'tf-init'
   args: ['init']
   dir: 'terraform'
 
-# Import existing deployment into Terraform state
-- name: 'hashicorp/terraform:1.4.7'
+# Import existing deployment
+- name: '${_TERRAFORM_VERSION}'
   id: 'tf-import'
   entrypoint: 'sh'
   args:
   - '-c'
   - |
     terraform init
-    export TF_VAR_app_image=$(grep 'app_image' main.tfvars | cut -d'=' -f2- | tr -d ' "')
-    terraform import kubernetes_deployment.flask_app default/flask-app || true
+    export TF_VAR_app_image=$(grep 'app_image' ${_TFVARS_FILE} | cut -d'=' -f2- | tr -d ' "')
+    terraform import kubernetes_deployment.flask_app ${_K8S_NAMESPACE}/flask-app || true
   dir: 'terraform'
 
 # Terraform Plan
-- name: 'hashicorp/terraform:1.4.7'
+- name: '${_TERRAFORM_VERSION}'
   id: 'tf-plan'
   args:
     - 'plan'
-    - '-var-file=main.tfvars'
+    - '-var-file=${_TFVARS_FILE}'
     - '-out=/workspace/terraform/tfplan'
     - '-input=false'
   dir: 'terraform'
@@ -49,21 +49,18 @@ steps:
     - 'builds'
     - 'triggers'
     - 'run'
-    - '5c2e6392-3307-4603-9107-95150b4a6092'  # Your apply trigger ID
+    - '${_APPLY_TRIGGER_ID}'
     - '--branch=${BRANCH_NAME}'
-    - '--project=vishakha-403211'
-    - '--region=asia-south1'
+    - '--project=${PROJECT_ID}'
+    - '--region=${_REGION}'
   waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
   env:
-    - 'TF_VAR_project_id=vishakha-403211'
-    - 'TF_VAR_region=asia-south1'
+    - 'TF_VAR_project_id=${PROJECT_ID}'
+    - 'TF_VAR_region=${_REGION}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
-
-substitutions:
-  _BUCKET_NAME: 'vishakha-403211-tfstate'
 
 timeout: '1800s'
