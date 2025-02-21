@@ -1,5 +1,19 @@
 # cloudbuild-plan.yaml
 steps:
+# Load environment variables from test-env.yaml
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'load-env'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      if [[ -f test-env.yaml ]]; then
+        echo "Loading environment variables from test-env.yaml"
+      else
+        echo "test-env.yaml not found"
+        exit 1
+      fi
+
 # Get cluster credentials
 - name: 'gcr.io/cloud-builders/gcloud'
   id: 'get-credentials'
@@ -12,12 +26,14 @@ steps:
   - '${_REGION}'
   - '--project'
   - '${PROJECT_ID}'
+  waitFor: ['load-env']
 
 # Terraform Init
 - name: '${_TERRAFORM_VERSION}'
   id: 'tf-init'
   args: ['init']
   dir: 'terraform'
+  waitFor: ['get-credentials']
 
 # Import existing deployment
 - name: '${_TERRAFORM_VERSION}'
@@ -27,9 +43,10 @@ steps:
   - '-c'
   - |
     terraform init
-    export TF_VAR_app_image=$(grep 'app_image' ${_TFVARS_FILE} | cut -d'=' -f2- | tr -d ' "')
+    export TF_VAR_app_image=$(grep 'app_image' terraform/${_TFVARS_FILE} | cut -d'=' -f2- | tr -d ' "')
     terraform import kubernetes_deployment.flask_app ${_K8S_NAMESPACE}/flask-app || true
   dir: 'terraform'
+  waitFor: ['tf-init']
 
 # Terraform Plan
 - name: '${_TERRAFORM_VERSION}'
@@ -62,6 +79,5 @@ options:
     - 'TF_VAR_region=${_REGION}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
-
 
 timeout: '1800s'
