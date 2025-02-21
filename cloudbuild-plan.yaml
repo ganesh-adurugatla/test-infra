@@ -53,7 +53,7 @@ steps:
     - '--branch=${BRANCH_NAME}'
     - '--project=vishakha-403211'
     - '--region=asia-south1'
-  waitFor: ['save-plan']
+  waitFor: ['tf-plan']
 
 options:
   logging: CLOUD_LOGGING_ONLY
