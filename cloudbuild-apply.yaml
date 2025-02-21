@@ -27,7 +27,7 @@ steps:
     - 'apply'
     - '-input=false'
     - '-auto-approve'
-    - '-var-file=main.tfvars
+    - '-var-file=main.tfvars'
   dir: 'terraform'
   waitFor: ['tf-init']
 
