@@ -15,7 +15,10 @@ steps:
 # Terraform Init
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-init'
-  args: ['init']
+  args: 
+    - 'init'
+    - '-backend-config=bucket=${_BUCKET_NAME}'
+    - '-backend-config=prefix=terraform/state'
   dir: 'terraform'
   waitFor: ['get-credentials']
 # Terraform Plan
@@ -24,7 +27,6 @@ steps:
   args:
     - 'plan'
     - '-var-file=${_TFVARS_FILE}'
-    - '-var=namespace=${_K8S_NAMESPACE}'
     - '-out=/workspace/terraform/tfplan'
     - '-input=false'
   dir: 'terraform'
@@ -46,7 +48,6 @@ options:
   env:
     - 'TF_VAR_project_id=${PROJECT_ID}'
     - 'TF_VAR_region=${_REGION}'
-    - 'TF_VAR_namespace=${_K8S_NAMESPACE}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
 timeout: '1800s'
