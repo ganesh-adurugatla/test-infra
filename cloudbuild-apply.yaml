@@ -19,7 +19,7 @@ steps:
     - 'init'
     - '-backend-config=bucket=${_BUCKET_NAME}'
     - '-backend-config=prefix=terraform/state'
-  dir: 'terraform'
+  dir: '${_TERRAFORM_DIR}'
   waitFor: ['get-credentials']
 # Terraform Apply
 - name: 'hashicorp/terraform:1.4.7'
@@ -29,7 +29,7 @@ steps:
     - '-input=false'
     - '-auto-approve'
     - '-var-file=${_TFVARS_FILE}'
-  dir: 'terraform'
+  dir: '${_TERRAFORM_DIR}'
   waitFor: ['tf-init']
 options:
   logging: CLOUD_LOGGING_ONLY
