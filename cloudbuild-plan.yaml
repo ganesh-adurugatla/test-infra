@@ -24,6 +24,7 @@ steps:
   args:
     - 'plan'
     - '-var-file=${_TFVARS_FILE}'
+    - '-var=namespace=${_K8S_NAMESPACE}'
     - '-out=/workspace/terraform/tfplan'
     - '-input=false'
   dir: 'terraform'
@@ -45,6 +46,7 @@ options:
   env:
     - 'TF_VAR_project_id=${PROJECT_ID}'
     - 'TF_VAR_region=${_REGION}'
+    - 'TF_VAR_namespace=${_K8S_NAMESPACE}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
 timeout: '1800s'
