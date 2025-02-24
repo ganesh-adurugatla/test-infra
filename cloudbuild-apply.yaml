@@ -12,16 +12,17 @@ steps:
   - '${_REGION}'
   - '--project'
   - '${PROJECT_ID}'
-
 # Terraform Init
-- name: '${_TERRAFORM_VERSION}'
+- name: 'hashicorp/terraform:1.4.7'
   id: 'tf-init'
-  args: ['init']
+  args:
+    - 'init'
+    - '-backend-config=bucket=${_BUCKET_NAME}'
+    - '-backend-config=prefix=terraform/state'
   dir: 'terraform'
   waitFor: ['get-credentials']
-
 # Terraform Apply
-- name: '${_TERRAFORM_VERSION}'
+- name: 'hashicorp/terraform:1.4.7'
   id: 'tf-apply'
   args:
     - 'apply'
@@ -30,7 +31,6 @@ steps:
     - '-var-file=${_TFVARS_FILE}'
   dir: 'terraform'
   waitFor: ['tf-init']
-
 options:
   logging: CLOUD_LOGGING_ONLY
   env:
@@ -38,5 +38,4 @@ options:
     - 'TF_VAR_region=${_REGION}'
     - 'TF_IN_AUTOMATION=true'
     - 'TF_INPUT=0'
-
 timeout: '1800s'
