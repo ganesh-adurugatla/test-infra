@@ -19,7 +19,7 @@ steps:
     - 'init'
     - '-backend-config=bucket=${_BUCKET_NAME}'
     - '-backend-config=prefix=terraform/state'
-  dir: 'terraform'
+  dir: '${_TERRAFORM_DIR}'
   waitFor: ['get-credentials']
 # Terraform Plan
 - name: 'hashicorp/terraform:1.4.7'
@@ -29,7 +29,7 @@ steps:
     - '-var-file=${_TFVARS_FILE}'
     - '-out=/workspace/terraform/tfplan'
     - '-input=false'
-  dir: 'terraform'
+  dir: '${_TERRAFORM_DIR}'
   waitFor: ['tf-init']
 # Trigger apply build
 - name: 'gcr.io/cloud-builders/gcloud'
