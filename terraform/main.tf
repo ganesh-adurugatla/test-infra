@@ -20,7 +20,7 @@ provider "kubernetes" {
 resource "kubernetes_deployment" "flask_app" {
   metadata {
     name      = "flask-app"
-    namespace = "default"
+    namespace = "bluecopa"
   }
 
   spec {
