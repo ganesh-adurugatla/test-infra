@@ -12,6 +12,14 @@ steps:
   - '${_REGION}'
   - '--project'
   - '${PROJECT_ID}'
+# Download tfvars from GCS bucket
+- name: 'gcr.io/cloud-builders/gsutil'
+  id: 'download-tfvars'
+  args:
+  - 'cp'
+  - 'gs://${_CONFIG_BUCKET_NAME}/terraform/vars/main.tfvars'
+  - '${_TERRAFORM_DIR}/${_TFVARS_FILE}'
+  waitFor: ['get-credentials']
 # Terraform Init
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-init'
