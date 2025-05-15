@@ -28,7 +28,7 @@ steps:
     - '-backend-config=bucket=${_BUCKET_NAME}'
     - '-backend-config=prefix=terraform/state'
   dir: '${_TERRAFORM_DIR}'
-  waitFor: ['get-credentials']
+  waitFor: ['download-tfvars']
 # Terraform Plan
 - name: 'hashicorp/terraform:1.4.7'
   id: 'tf-plan'
