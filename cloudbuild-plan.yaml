@@ -17,7 +17,7 @@ steps:
   id: 'download-tfvars'
   args:
   - 'cp'
-  - 'gs://${_CONFIG_BUCKET_NAME}/terraform/vars/main.tfvars'
+  - 'gs://${_CONFIG_BUCKET_NAME}/main.tfvars'
   - '${_TERRAFORM_DIR}/${_TFVARS_FILE}'
   waitFor: ['get-credentials']
 # Terraform Init
