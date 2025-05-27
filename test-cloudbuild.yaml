@@ -1,0 +1,4 @@
+steps:
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk' # Standard Google Cloud SDK image
+  entrypoint: 'bash'
+  args: ['-c', 'echo "Minimal logging test from Cloud Build in fk-bluecopa-v. Timestamp: $(date)" && echo "BUILD_ID: $BUILD_ID"']
