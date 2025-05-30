@@ -47,9 +47,7 @@ steps:
     - 'triggers'
     - 'run'
     - '${_APPLY_TRIGGER_ID}'
-    - '--branch=${BRANCH_NAME}'
-    - '--project=${PROJECT_ID}'
-    - '--region=${_REGION}'
+
   waitFor: ['tf-plan']
 options:
   logging: CLOUD_LOGGING_ONLY
