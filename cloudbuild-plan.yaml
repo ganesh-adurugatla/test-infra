@@ -35,7 +35,7 @@ steps:
   args:
     - 'plan'
     - '-var-file=${_TFVARS_FILE}'
-    - '-out=/workspace/terraform/tfplan'
+    - '-out=tfplan'
     - '-input=false'
   dir: '${_TERRAFORM_DIR}'
   waitFor: ['tf-init']
